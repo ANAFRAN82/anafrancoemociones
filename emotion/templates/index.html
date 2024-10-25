@@ -1,68 +1,77 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face Analysis Tool</title>
+    <title>Insights Faciales</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f2027, #2c5364, #203a43, #3a6073);
+            background-size: 400% 400%;
+            animation: gradientBackground 15s ease infinite;
+            font-family: 'Arial', sans-serif;
+        }
+
+        @keyframes gradientBackground {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+    </style>
 </head>
 
-<body class="bg-blue-50 min-h-screen text-gray-800">
+<body class="flex items-center justify-center min-h-screen text-gray-100">
 
-    <div class="container mx-auto px-6 py-10">
-        <h1 class="text-3xl font-semibold text-center mb-6 text-blue-700">Face Analysis Tool</h1>
+    <div class="max-w-xl w-full bg-white bg-opacity-10 rounded-3xl shadow-2xl p-8 backdrop-blur-md">
+        <h1 class="text-3xl font-bold text-center mb-8 text-yellow-300 tracking-wider">Insights Faciales</h1>
 
-        <div class="max-w-lg mx-auto bg-white rounded-lg shadow-lg p-8">
-            <!-- File Upload Section -->
-            <section class="mb-8">
-                <h2 class="text-xl font-semibold mb-3">Upload an Image</h2>
-                <form id="uploadForm" class="space-y-4">
-                    <label class="flex flex-col items-center justify-center w-full h-36 bg-blue-100 rounded-lg border border-blue-300 hover:bg-blue-200 cursor-pointer">
-                        <div class="flex flex-col items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
-                            </svg>
-                            <p class="text-sm mt-1">Select an image</p>
-                        </div>
-                        <input type="file" class="hidden" name="file" accept=".jpg,.jpeg,.png" />
-                    </label>
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">Analyze</button>
-                </form>
-            </section>
-
-            <!-- Results Section -->
-            <section id="results" class="hidden">
-                <h2 class="text-xl font-semibold mb-3">Analysis Results</h2>
-                <div class="rounded-lg overflow-hidden">
-                    <img id="resultImage" class="w-full h-auto" src="" alt="Analysis Result">
-                </div>
-            </section>
-
-            <!-- Loading Indicator -->
-            <section id="loading" class="hidden text-center my-4">
-                <div class="animate-spin rounded-full h-10 w-10 border-t-4 border-blue-500"></div>
-            </section>
-
-            <!-- Error Display -->
-            <section id="error" class="hidden mt-4 p-3 bg-red-100 border border-red-300 text-red-600 rounded-lg">
-            </section>
-
-            <!-- Existing Images Section -->
-            {% if images %}
-            <section class="mt-8">
-                <h2 class="text-xl font-semibold mb-3">Previous Uploads</h2>
-                <div class="grid grid-cols-2 gap-4">
-                    {% for image in images %}
-                    <div class="relative group">
-                        <img src="{{ url_for('static', filename='uploads/' + image) }}" alt="{{ image }}" class="w-full h-24 object-cover rounded-lg cursor-pointer" onclick="analyzeExisting('{{ image }}')">
+        <section class="mb-10 text-center">
+            <h2 class="text-xl font-semibold mb-4 text-purple-200">Sube tu Imagen</h2>
+            <form id="uploadForm" class="flex flex-col items-center">
+                <label class="flex flex-col items-center justify-center w-40 h-40 bg-opacity-10 bg-yellow-200 rounded-full border-4 border-yellow-300 hover:border-yellow-400 transition ease-in-out duration-200 cursor-pointer">
+                    <div class="flex flex-col items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                        </svg>
+                        <p class="mt-2 text-sm">Seleccionar Imagen</p>
                     </div>
-                    {% endfor %}
+                    <input type="file" class="hidden" name="file" accept=".jpg,.jpeg,.png" />
+                </label>
+                <button type="submit" class="mt-6 bg-gradient-to-r from-purple-600 to-pink-500 px-6 py-2 rounded-lg shadow-lg hover:scale-105 transform transition text-white">Analizar</button>
+            </form>
+        </section>
+
+        <section id="results" class="hidden">
+            <h2 class="text-xl font-semibold mb-4 text-purple-200">Resultado del Análisis</h2>
+            <div class="relative rounded-lg overflow-hidden bg-gray-800 bg-opacity-20 p-4">
+                <img id="resultImage" class="w-full h-auto rounded-lg border-2 border-purple-300" src="" alt="Resultado del Análisis">
+            </div>
+        </section>
+
+        <section id="loading" class="hidden text-center my-4">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-yellow-400"></div>
+            <p class="mt-2 text-yellow-200 text-sm">Analizando...</p>
+        </section>
+
+        <section id="error" class="hidden mt-4 p-3 bg-red-600 bg-opacity-80 border border-red-300 text-white rounded-lg text-center">
+            <p>Ocurrió un error. Por favor, inténtalo nuevamente.</p>
+        </section>
+
+        {% if images %}
+        <section class="mt-10">
+            <h2 class="text-xl font-semibold mb-3 text-yellow-200">Subidas Anteriores</h2>
+            <div class="grid grid-cols-3 gap-4">
+                {% for image in images %}
+                <div class="relative group">
+                    <img src="{{ url_for('static', filename='uploads/' + image) }}" alt="{{ image }}" class="w-full h-24 object-cover rounded-lg transform hover:scale-105 transition" onclick="analyzeExisting('{{ image }}')">
                 </div>
-            </section>
-            {% endif %}
-        </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
     </div>
 
     <script>
@@ -94,7 +103,7 @@
                     },
                     error: function(xhr) {
                         hideLoading();
-                        $('#error').removeClass('hidden').text(xhr.responseJSON?.error || 'An error occurred');
+                        $('#error').removeClass('hidden').text(xhr.responseJSON?.error || 'Ocurrió un error');
                     }
                 });
             });
@@ -117,10 +126,11 @@
                 },
                 error: function(xhr) {
                     hideLoading();
-                    $('#error').removeClass('hidden').text(xhr.responseJSON?.error || 'An error occurred');
+                    $('#error').removeClass('hidden').text(xhr.responseJSON?.error || 'Ocurrió un error');
                 }
             });
         }
     </script>
 </body>
+
 </html>
