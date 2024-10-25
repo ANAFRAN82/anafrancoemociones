@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplicación de análisis facial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body class="bg-gray-900 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold text-center mb-8 text-white">Aplicación de análisis facial</h1>
+        
+        <div class="max-w-2xl mx-auto bg-gray-800 rounded-lg shadow-xl p-6">
+            <!-- File Upload Section -->
+            <div class="mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-200">Subir nueva imagen</h2>
+                <form id="uploadForm" class="space-y-4">
+                    <div class="flex items-center justify-center w-full">
+                        <label class="flex flex-col w-full h-32 border-4 border-dashed border-gray-600 hover:border-gray-500 hover:bg-gray-700 rounded-lg">
+                            <div class="flex flex-col items-center justify-center pt-7">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-gray-400 group-hover:text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                                </svg>
+                                <p class="pt-1 text-sm tracking-wider text-gray-400 group-hover:text-gray-300">
+                                    Seleccione una imagen</p>
+                            </div>
+                            <input type="file" class="opacity-0" name="file" accept=".jpg,.jpeg,.png" />
+                        </label>
+                    </div>
+                    <button type="submit" class="w-full px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                        Analizar imagen
+                    </button>
+                </form>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results" class="hidden">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-200">Resultados del análisis</h2>
+                <div class="border border-gray-700 rounded-lg p-4 bg-gray-700">
+                    <img id="resultImage" class="max-w-full h-auto mx-auto" src="" alt="Analysis Result">
+                </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loading" class="hidden">
+                <div class="flex items-center justify-center p-4">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                </div>
+            </div>
+
+            <!-- Error Display -->
+            <div id="error" class="hidden mt-4 p-4 bg-red-900 border border-red-700 text-red-200 rounded-lg">
+            </div>
+
+            <!-- Existing Images Section -->
+            {% if images %}
+            <div class="mt-8">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-200">Imágenes cargadas previamente</h2>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {% for image in images %}
+                    <div class="relative group">
+                        <img src="{{ url_for('static', filename='uploads/' + image) }}" 
+                             alt="{{ image }}" 
+                             class="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-75 transition-opacity"
+                             onclick="analyzeExisting('{{ image }}')">
+                        <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-gray-200 text-xs p-1 rounded-b-lg truncate">
+                            {{ image }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function showLoading() {
+            $('#loading').removeClass('hidden');
+            $('#error').addClass('hidden');
+            $('#results').addClass('hidden');
+        }
+
+        function hideLoading() {
+            $('#loading').addClass('hidden');
+        }
+
+        $(document).ready(function() {
+            $('#uploadForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                var formData = new FormData(this);
+                showLoading();
+                
+                $.ajax({
+                    url: '/analyze',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        hideLoading();
+                        $('#results').removeClass('hidden');
+                        $('#resultImage').attr('src', 'data:image/png;base64,' + response.image);
+                    },
+                    error: function(xhr) {
+                        hideLoading();
+                        $('#error')
+                            .removeClass('hidden')
+                            .text(xhr.responseJSON?.error || 'An error occurred');
+                    }
+                });
+            });
+        });
+
+        function analyzeExisting(filename) {
+            showLoading();
+            
+            const formData = new FormData();
+            formData.append('existing_file', filename);
+            
+            $.ajax({
+                url: '/analyze',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(response) {
+                    hideLoading();
+                    $('#results').removeClass('hidden');
+                    $('#resultImage').attr('src', 'data:image/png;base64,' + response.image);
+                },
+                error: function(xhr) {
+                    hideLoading();
+                    $('#error')
+                        .removeClass('hidden')
+                        .text(xhr.responseJSON?.error || 'An error occurred');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
