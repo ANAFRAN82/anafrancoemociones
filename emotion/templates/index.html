@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detección de Puntos Faciales (Ana Franco)</title>
+    <title>Insights Faciales</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
@@ -22,14 +21,13 @@
         }
     </style>
 </head>
-
 <body class="flex items-center justify-center min-h-screen text-gray-100">
 
     <div class="max-w-xl w-full bg-white bg-opacity-10 rounded-3xl shadow-2xl p-8 backdrop-blur-md">
         <h1 class="text-3xl font-bold text-center mb-8 text-yellow-300 tracking-wider">Detección de Puntos Faciales</h1>
 
         <section class="mb-10 text-center">
-            <h2 class="text-xl font-semibold mb-4 text-purple-200">Sube tu Imagen</h2>
+            <h2 class="text-xl font-semibold mb-4 text-purple-200">Subir Imagen</h2>
             <form id="uploadForm" class="flex flex-col items-center">
                 <label class="flex flex-col items-center justify-center w-40 h-40 bg-opacity-10 bg-yellow-200 rounded-full border-4 border-yellow-300 hover:border-yellow-400 transition ease-in-out duration-200 cursor-pointer">
                     <div class="flex flex-col items-center">
@@ -38,14 +36,16 @@
                         </svg>
                         <p class="mt-2 text-sm">Seleccionar Imagen</p>
                     </div>
-                    <input type="file" class="hidden" name="file" accept=".jpg,.jpeg,.png" />
+                    <input type="file" class="hidden" name="file" accept=".jpg,.jpeg,.png" onchange="mostrarNombreArchivo(this)" />
                 </label>
+                <!-- Aquí se mostrará el nombre del archivo cargado -->
+                <p id="nombreArchivo" class="mt-4 text-yellow-200 text-sm"></p>
                 <button type="submit" class="mt-6 bg-gradient-to-r from-purple-600 to-pink-500 px-6 py-2 rounded-lg shadow-lg hover:scale-105 transform transition text-white">Analizar</button>
             </form>
         </section>
 
         <section id="results" class="hidden">
-            <h2 class="text-xl font-semibold mb-4 text-purple-200">Resultado del Análisis</h2>
+            <h2 class="text-xl font-semibold mb-4 text-purple-200">Resultado</h2>
             <div class="relative rounded-lg overflow-hidden bg-gray-800 bg-opacity-20 p-4">
                 <img id="resultImage" class="w-full h-auto rounded-lg border-2 border-purple-300" src="" alt="Resultado del Análisis">
             </div>
@@ -57,24 +57,18 @@
         </section>
 
         <section id="error" class="hidden mt-4 p-3 bg-red-600 bg-opacity-80 border border-red-300 text-white rounded-lg text-center">
-            <p>Ocurrió un error. Por favor, inténtalo nuevamente.</p>
+            <p>No se pudo realizar el análisis </p>
         </section>
-
-        {% if images %}
-        <section class="mt-10">
-            <h2 class="text-xl font-semibold mb-3 text-yellow-200">Imagenes guardadas</h2>
-            <div class="grid grid-cols-3 gap-4">
-                {% for image in images %}
-                <div class="relative group">
-                    <img src="{{ url_for('static', filename='uploads/' + image) }}" alt="{{ image }}" class="w-full h-24 object-cover rounded-lg transform hover:scale-105 transition" onclick="analyzeExisting('{{ image }}')">
-                </div>
-                {% endfor %}
-            </div>
-        </section>
-        {% endif %}
     </div>
 
     <script>
+        function mostrarNombreArchivo(input) {
+            // Obtener el nombre del archivo seleccionado
+            var nombreArchivo = input.files[0].name;
+            // Mostrar el nombre en el elemento con id="nombreArchivo"
+            document.getElementById('nombreArchivo').textContent = "Archivo seleccionado: " + nombreArchivo;
+        }
+
         function showLoading() {
             $('#loading').removeClass('hidden');
             $('#error').addClass('hidden');
@@ -108,29 +102,6 @@
                 });
             });
         });
-
-        function analyzeExisting(filename) {
-            showLoading();
-            const formData = new FormData();
-            formData.append('existing_file', filename);
-            $.ajax({
-                url: '/analyze',
-                type: 'POST',
-                data: formData,
-                contentType: false,
-                processData: false,
-                success: function(response) {
-                    hideLoading();
-                    $('#results').removeClass('hidden');
-                    $('#resultImage').attr('src', 'data:image/png;base64,' + response.image);
-                },
-                error: function(xhr) {
-                    hideLoading();
-                    $('#error').removeClass('hidden').text(xhr.responseJSON?.error || 'Ocurrió un error');
-                }
-            });
-        }
     </script>
 </body>
-
 </html>
