@@ -72,6 +72,19 @@
         <section id="error" class="hidden mt-4 bg-red-500 text-white p-3 rounded-lg">
             <p>No se pudo analizar la imagen.</p>
         </section>
+
+        {% if images %}
+        <section class="mt-10">
+            <h2 class="text-xl font-semibold mb-3 text-yellow-200">Subidas Anteriores</h2>
+            <div class="grid grid-cols-3 gap-4">
+                {% for image in images %}
+                <div class="relative group">
+                    <img src="{{ url_for('static', filename='uploads/' + image) }}" alt="{{ image }}" class="w-full h-24 object-cover rounded-lg transform hover:scale-105 transition" onclick="analyzeExisting('{{ image }}')">
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
     </div>
 
     <script>
@@ -114,6 +127,27 @@
                 });
             });
         });
+        function analyzeExisting(filename) {
+            showLoading();
+            const formData = new FormData();
+            formData.append('existing_file', filename);
+            $.ajax({
+                url: '/analyze',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(response) {
+                    hideLoading();
+                    $('#results').removeClass('hidden');
+                    $('#resultImage').attr('src', 'data:image/png;base64,' + response.image);
+                },
+                error: function(xhr) {
+                    hideLoading();
+                    $('#error').removeClass('hidden').text(xhr.responseJSON?.error || 'Ocurrió un error');
+                }
+            });
+        }
     </script>
 </body>
 </html>
