@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analizador de Rostros</title>
+    <title>Puntos Faciales</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
@@ -40,7 +40,7 @@
 
     <!-- Contenedor principal -->
     <div class="container max-w-lg w-full p-8 bg-gray-900 rounded-3xl shadow-xl text-center">
-        <h1 class="text-4xl font-bold mb-6 text-yellow-400">Analizador de Rostros</h1>
+        <h1 class="text-4xl font-bold mb-6 text-yellow-400">Detección de Puntos Faciales</h1>
 
         <!-- Sección de subida de imagen -->
         <section class="mb-8">
@@ -64,14 +64,13 @@
         <!-- Cargando, errores y resultados -->
         <section id="loading" class="hidden text-center my-4">
             <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-yellow-400"></div>
-            <p class="mt-2 text-yellow-200 text-sm">Analizando...</p>
         </section>
         <section id="results" class="hidden">
-            <h2 class="text-xl font-semibold mb-4 text-purple-300">Resultado del Análisis</h2>
+            <h2 class="text-xl font-semibold mb-4 text-purple-300">Resultado</h2>
             <img id="resultImage" class="w-full h-auto rounded-lg border-2 border-purple-300" src="" alt="Resultado del Análisis">
         </section>
         <section id="error" class="hidden mt-4 bg-red-500 text-white p-3 rounded-lg">
-            <p>Ocurrió un error al analizar. Inténtalo nuevamente.</p>
+            <p>No se pudo analizar la imagen.</p>
         </section>
     </div>
 
