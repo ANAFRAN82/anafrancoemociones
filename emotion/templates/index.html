@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        /* Fondo animado */
         body {
             background: linear-gradient(135deg, #0f2027, #2c5364, #3a6073);
             background-size: 400% 400%;
@@ -22,7 +21,6 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* Animación para botones y contenedor */
         .animated-button:hover {
             transform: scale(1.1);
             box-shadow: 0px 8px 15px rgba(255, 255, 255, 0.2);
@@ -36,17 +34,15 @@
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen">
+<body class="flex flex-col items-center justify-center min-h-screen">
 
-    <!-- Contenedor principal -->
-    <div class="container max-w-lg w-full p-8 bg-gray-900 rounded-3xl shadow-xl text-center">
-        <h1 class="text-4xl font-bold mb-6 text-blue-400">Detección de Puntos Faciales</h1>
+    <div class="container max-w-lg w-full p-8 bg-gray-900 rounded-3xl shadow-xl text-center mb-8">
+        <h1 class="text-4xl font-bold mb-6 text-teal-400">Detección de Puntos Faciales</h1>
 
-        <!-- Sección de subida de imagen -->
         <section class="mb-8">
             <h2 class="text-lg font-semibold text-teal-300 mb-4">Sube una Imagen</h2>
             <form id="uploadForm" class="flex flex-col items-center">
-                <label class="flex flex-col items-center justify-center w-40 h-40 rounded-full bg-blue-300 bg-opacity-10 hover:bg-opacity-20 transition cursor-pointer border-4 border-dotted border-teal-300">
+                <label class="flex flex-col items-center justify-center w-40 h-40 rounded-full bg-teal-300 bg-opacity-10 hover:bg-opacity-20 transition cursor-pointer border-4 border-dotted border-teal-300">
                     <div class="text-teal-300">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 2a10 10 0 00-10 10 10 10 0 0010 10 10 10 0 0010-10 10 10 0 00-10-10zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
@@ -55,15 +51,13 @@
                     </div>
                     <input type="file" class="hidden" name="file" accept=".jpg,.jpeg,.png" onchange="mostrarNombreArchivo(this)" />
                 </label>
-                <!-- Mostrar nombre del archivo -->
                 <p id="nombreArchivo" class="mt-4 text-teal-200 text-sm"></p>
                 <button type="submit" class="animated-button mt-8 bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2 rounded-full shadow-lg text-white font-semibold hover:from-purple-500 hover:to-blue-500 transition-transform duration-300">Analizar</button>
             </form>
         </section>
 
-        <!-- Cargando, errores y resultados -->
         <section id="loading" class="hidden text-center my-4">
-            <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-400"></div>
+            <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-teal-400"></div>
         </section>
         <section id="results" class="hidden">
             <h2 class="text-xl font-semibold mb-4 text-purple-300">Resultado</h2>
@@ -75,7 +69,7 @@
 
         {% if images %}
         <section class="mt-10">
-            <h2 class="text-xl font-semibold mb-3 text-blue-200">Imágenes anteriores</h2>
+            <h2 class="text-xl font-semibold mb-3 text-teal-200">Imágenes Anteriores</h2>
             <div class="grid grid-cols-3 gap-4">
                 {% for image in images %}
                 <div class="relative group">
@@ -87,14 +81,16 @@
         {% endif %}
     </div>
 
+    <footer class="w-full bg-gray-800 text-teal-300 py-4 text-center">
+        <p class="text-sm">&copy; Ana Cristina Franco González</p>
+    </footer>
+
     <script>
-        // Mostrar nombre del archivo
         function mostrarNombreArchivo(input) {
             var nombreArchivo = input.files[0].name;
             document.getElementById('nombreArchivo').textContent = "Archivo: " + nombreArchivo;
         }
 
-        // Mostrar y ocultar secciones de carga, error y resultados
         function showLoading() {
             $('#loading').removeClass('hidden');
             $('#error').addClass('hidden');
@@ -127,6 +123,7 @@
                 });
             });
         });
+
         function analyzeExisting(filename) {
             showLoading();
             const formData = new FormData();
@@ -151,4 +148,3 @@
     </script>
 </body>
 </html>
-
