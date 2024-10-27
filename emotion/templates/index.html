@@ -58,11 +58,27 @@
         </section>
 
         <section id="loading" class="hidden text-center my-4">
-    <div class="w-full bg-gray-200 rounded-full h-2.5">
-        <div class="bg-blue-500 h-2.5 rounded-full animate-pulse" style="width: 75%;"></div>
-    </div>
+    <div class="sphere"></div>
     <p class="text-gray-500 mt-2">Cargando...</p>
 </section>
+<style>
+    .sphere {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(45deg, #6dd5ed, #2193b0);
+        animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.1);
+        }
+    }
+</style>
+
 
         <section id="results" class="hidden">
             <h2 class="text-xl font-semibold mb-4 text-purple-300">Resultado</h2>
