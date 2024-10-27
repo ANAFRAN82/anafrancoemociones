@@ -57,27 +57,37 @@
             </form>
         </section>
 
-        <section id="loading" class="hidden text-center my-4">
-    <div class="sphere"></div>
+ <section id="loading" class="hidden text-center my-4">
+    <div class="gravity-loader">
+        <div class="ball"></div>
+        <div class="ball"></div>
+        <div class="ball"></div>
+    </div>
     <p class="text-gray-500 mt-2">Cargando...</p>
 </section>
 <style>
-    .sphere {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background: linear-gradient(45deg, #6dd5ed, #2193b0);
-        animation: pulse 1.5s infinite;
+    .gravity-loader {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        height: 60px;
     }
-    @keyframes pulse {
-        0%, 100% {
-            transform: scale(1);
-        }
-        50% {
-            transform: scale(1.1);
-        }
+    .ball {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #3490dc;
+        margin: 0 5px;
+        animation: bounce 0.6s infinite alternate;
+    }
+    .ball:nth-child(1) { animation-delay: 0s; }
+    .ball:nth-child(2) { animation-delay: 0.2s; }
+    .ball:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+        to { transform: translateY(-30px); }
     }
 </style>
+
 
 
         <section id="results" class="hidden">
