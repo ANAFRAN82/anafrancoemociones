@@ -4,7 +4,7 @@ from werkzeug.utils import secure_filename
 from urllib.parse import quote as url_quote
 import numpy as np
 import matplotlib
-matplotlib.use('Agg')  # Set backend before importing pyplot
+matplotlib.use('Agg')  
 import matplotlib.pyplot as plt
 import mediapipe as mp
 import cv2
@@ -12,13 +12,11 @@ import base64
 from io import BytesIO
 app = Flask(__name__)
 
-# Configure upload folder
 UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  
 
-# Ensure upload directory exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
@@ -26,7 +24,6 @@ def allowed_file(filename):
 
 def analyze_face(image_path):
     try:
-        # Initialize MediaPipe Face Mesh
         mp_face_mesh = mp.solutions.face_mesh
         face_mesh = mp_face_mesh.FaceMesh(
             static_image_mode=True,
@@ -34,16 +31,13 @@ def analyze_face(image_path):
             min_detection_confidence=0.5
         )
 
-        # Read image
         image = cv2.imread(image_path)
         if image is None:
             raise Exception("Could not load image")
 
-        # Convert to RGB for MediaPipe
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        # Detect facial landmarks
         results = face_mesh.process(rgb_image)
 
         if not results.multi_face_landmarks:
@@ -55,12 +49,10 @@ def analyze_face(image_path):
 
         height, width = gray_image.shape
         
-        # Create a new figure for each analysis
         plt.clf()
         fig = plt.figure(figsize=(8, 8))
         plt.imshow(gray_image, cmap='gray')
 
-        # Plot facial landmarks
         for point_idx in key_points:
             landmark = results.multi_face_landmarks[0].landmark[point_idx]
             x = int(landmark.x * width)
@@ -73,7 +65,6 @@ def analyze_face(image_path):
         buf.seek(0)
         plt.close(fig)
 
-        # Convert to base64
         image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
         return image_base64
 
@@ -85,7 +76,6 @@ def analyze_face(image_path):
 
 @app.route('/')
 def home():
-    # Get list of images in upload folder
     images = []
     for filename in os.listdir(app.config['UPLOAD_FOLDER']):
         if allowed_file(filename):
@@ -95,14 +85,12 @@ def home():
 @app.route('/analyze', methods=['POST'])
 def analyze():
     try:
-        # Check if we're analyzing an existing file
         if 'existing_file' in request.form:
             filename = request.form['existing_file']
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             if not os.path.exists(filepath):
                 return jsonify({'error': f'File not found: {filename}'}), 404
             
-        # Check if we're uploading a new file
         elif 'file' in request.files:
             file = request.files['file']
             if file.filename == '':
@@ -118,7 +106,6 @@ def analyze():
         else:
             return jsonify({'error': 'No file provided'}), 400
 
-        # Analyze the image
         result_image = analyze_face(filepath)
         
         return jsonify({
