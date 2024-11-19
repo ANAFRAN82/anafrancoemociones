@@ -31,54 +31,44 @@ def analyze_face(image_path):
             raise Exception("Could not load image")
 
         # Dimensiones originales de la imagen
-        original_height, original_width = image.shape[:2]
+        height, width = image.shape[:2]
 
-        # Giramos la imagen horizontalmente
-        flipped_image_h = cv2.flip(image, 1)  # Voltea horizontalmente
+        # Procesamos la imagen original con MediaPipe
+        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        results = face_mesh.process(rgb_image)
+
+        if not results.multi_face_landmarks:
+            raise Exception("No face detected in the image")
+
+        landmarks = results.multi_face_landmarks[0].landmark
+
+        # Lista de puntos clave específicos
+        key_points = [70, 55, 285, 300, 33, 480, 133, 362, 473, 263, 4, 185, 0, 306, 17]
+
+        # Coordenadas iniciales
+        points = [(int(landmarks[i].x * width), int(landmarks[i].y * height)) for i in key_points]
+
+        # Giramos horizontalmente
+        flipped_image_h = cv2.flip(image, 1)
+        points_flipped_h = [(width - x, y) for x, y in points]  # Ajustamos las coordenadas
 
         # Aumentamos el brillo aleatoriamente
         brightness_factor = np.random.uniform(1.5, 2.0)
         brighter_image = np.clip(flipped_image_h * brightness_factor, 0, 255).astype(np.uint8)
 
         # Volteamos verticalmente
-        flipped_image_v = cv2.flip(brighter_image, 0)  # Voltea verticalmente
+        flipped_image_v = cv2.flip(brighter_image, 0)
+        points_flipped_v = [(x, height - y) for x, y in points_flipped_h]  # Ajustamos las coordenadas
 
-        # Convertimos la imagen para procesamiento facial
-        rgb_image = cv2.cvtColor(flipped_image_v, cv2.COLOR_BGR2RGB)
+        # Convertimos a escala de grises para la visualización final
         gray_image = cv2.cvtColor(flipped_image_v, cv2.COLOR_BGR2GRAY)
 
-        # Procesamos la imagen con MediaPipe
-        results = face_mesh.process(rgb_image)
-
-        if not results.multi_face_landmarks:
-            raise Exception("No face detected in the image")
-
-        landmarks = results.multi_face_landmarks
-        if len(landmarks) == 0:
-            raise Exception("No landmarks found for detected face")
-
-        landmark = landmarks[0]
-        num_landmarks = len(landmark.landmark)
-        print(f"Number of landmarks detected: {num_landmarks}")
-
-        key_points = [i for i in [70, 55, 285, 300, 33, 480, 133, 362, 473, 263, 4, 185, 0, 306, 17] if i < num_landmarks]
-
-        height, width = gray_image.shape
-        
+        # Dibujamos la imagen procesada y los puntos
         plt.clf()
         fig = plt.figure(figsize=(8, 8))
         plt.imshow(gray_image, cmap='gray')
 
-        # Ajustamos las coordenadas de los puntos clave según los volteos
-        for point_idx in key_points:
-            landmark_point = landmark.landmark[point_idx]
-            x = int(landmark_point.x * original_width)
-            y = int(landmark_point.y * original_height)
-
-            # Ajustamos las coordenadas por el volteo horizontal y vertical
-            x = width - x  # Ajuste para el volteo horizontal
-            y = height - y  # Ajuste para el volteo vertical
-
+        for x, y in points_flipped_v:
             plt.plot(x, y, 'rx')
 
         buf = BytesIO()
