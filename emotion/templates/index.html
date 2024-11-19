@@ -14,7 +14,7 @@
             color: #E0E0E0;
             font-family: 'Arial', sans-serif;
         }
-
+        
         @keyframes backgroundAnimation {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
@@ -25,11 +25,9 @@
             transform: scale(1.1);
             box-shadow: 0px 8px 15px rgba(255, 255, 255, 0.2);
         }
-
         .container {
             animation: fadeIn 1.2s ease-out;
         }
-
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -51,15 +49,13 @@
                         </svg>
                         <p class="mt-2 text-sm">Seleccionar Imagen</p>
                     </div>
-                    <input type="file" class="hidden" name="file" accept=".jpg,.jpeg,.png" onchange="previsualizarImagen(this)" />
+                    <input type="file" class="hidden" name="file" accept=".jpg,.jpeg,.png" onchange="mostrarNombreArchivo(this)" />
                 </label>
-
+    
                 <p id="nombreArchivo" class="mt-4 text-teal-200 text-sm"></p>
-                <img id="previewImage" class="hidden mt-4 w-40 h-40 rounded-lg border-2 border-teal-300 object-cover" alt="Previsualización">
                 <button type="submit" class="animated-button mt-8 bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2 rounded-full shadow-lg text-white font-semibold hover:from-purple-500 hover:to-blue-500 transition-transform duration-300">Analizar</button>
             </form>
         </section>
-
         <section id="loading" class="hidden text-center my-4">
             <div class="w-full bg-gray-200 rounded-full h-2.5">
                 <div class="bg-blue-500 h-2.5 rounded-full animate-pulse" style="width: 75%;"></div>
@@ -71,14 +67,13 @@
             <h2 class="text-xl font-semibold mb-4 text-purple-300">Resultado</h2>
             <img id="resultImage" class="w-full h-auto rounded-lg border-2 border-purple-300" src="" alt="Resultado del Análisis">
         </section>
-
         <section id="error" class="hidden mt-4 bg-red-500 text-white p-3 rounded-lg">
-            <p id="errorMessage">No se pudo analizar la imagen.</p>
+            <p>No se pudo analizar la imagen.</p>
         </section>
 
         {% if images %}
         <section class="mt-10">
-            <h2 class="text-xl font-semibold mb-3 text-blue-200">Imágenes anteriores</h2>
+            <h2 class="text-xl font-semibold mb-3 text-blue-200">Imagenes anteriores</h2>
             <div class="grid grid-cols-3 gap-4">
                 {% for image in images %}
                 <div class="relative group">
@@ -91,22 +86,9 @@
     </div>
 
     <script>
-        function previsualizarImagen(input) {
-            const archivo = input.files[0];
-            if (!archivo) return;
-
-            const tiposPermitidos = ['image/jpeg', 'image/png'];
-            if (!tiposPermitidos.includes(archivo.type)) {
-                alert('Por favor, selecciona una imagen válida (JPG o PNG).');
-                return;
-            }
-
-            const lector = new FileReader();
-            lector.onload = function(e) {
-                $('#previewImage').attr('src', e.target.result).removeClass('hidden');
-                $('#nombreArchivo').text(`Archivo: ${archivo.name}`);
-            };
-            lector.readAsDataURL(archivo);
+        function mostrarNombreArchivo(input) {
+            var nombreArchivo = input.files[0].name;
+            document.getElementById('nombreArchivo').textContent = "Archivo: " + nombreArchivo;
         }
 
         function showLoading() {
@@ -114,7 +96,6 @@
             $('#error').addClass('hidden');
             $('#results').addClass('hidden');
         }
-
         function hideLoading() {
             $('#loading').addClass('hidden');
         }
@@ -122,7 +103,7 @@
         $(document).ready(function() {
             $('#uploadForm').on('submit', function(e) {
                 e.preventDefault();
-                const formData = new FormData(this);
+                var formData = new FormData(this);
                 showLoading();
                 $.ajax({
                     url: '/analyze',
@@ -137,12 +118,33 @@
                     },
                     error: function(xhr) {
                         hideLoading();
-                        $('#error').removeClass('hidden');
-                        $('#errorMessage').text(xhr.responseJSON?.error || 'Error en el análisis.');
+                        $('#error').removeClass('hidden').text(xhr.responseJSON?.error || 'Error en el análisis.');
                     }
                 });
             });
         });
+
+        function analyzeExisting(filename) {
+            showLoading();
+            const formData = new FormData();
+            formData.append('existing_file', filename);
+            $.ajax({
+                url: '/analyze',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(response) {
+                    hideLoading();
+                    $('#results').removeClass('hidden');
+                    $('#resultImage').attr('src', 'data:image/png;base64,' + response.image);
+                },
+                error: function(xhr) {
+                    hideLoading();
+                    $('#error').removeClass('hidden').text(xhr.responseJSON?.error || 'Ocurrió un error');
+                }
+            });
+        }
     </script>
 </body>
 </html>
