@@ -42,8 +42,9 @@ def analyze_face(image_path):
 
         landmarks = results.multi_face_landmarks[0].landmark
 
-        # Lista de puntos clave específicos
-        key_points = [70, 55, 285, 300, 33, 480, 133, 362, 473, 263, 4, 185, 0, 306, 17]
+        # Lista de puntos clave específicos (verificamos su validez)
+        num_landmarks = len(landmarks)
+        key_points = [i for i in [70, 55, 285, 300, 33, 480, 133, 362, 473, 263, 4, 185, 0, 306, 17] if i < num_landmarks]
 
         # Coordenadas iniciales
         points = [(int(landmarks[i].x * width), int(landmarks[i].y * height)) for i in key_points]
