@@ -6,6 +6,8 @@ import base64
 from io import BytesIO
 import mediapipe as mp
 import os
+import copy
+import random
 
 app = Flask(__name__)
 
@@ -72,6 +74,32 @@ def analyze_face(image_path):
     finally:
         plt.close('all')
 
+# Data Augmentation Functions
+def augment_data(keyfacial_df, columns):
+    # Volteo Horizontal
+    keyfacial_df_copy = copy.copy(keyfacial_df)
+    keyfacial_df_copy['Image'] = keyfacial_df['Image'].apply(lambda x: np.flip(x, axis=1))
+    for i in range(len(columns)):
+        if i % 2 == 0:  # Coordenadas X
+            keyfacial_df_copy[columns[i]] = keyfacial_df_copy[columns[i]].apply(lambda x: 96. - float(x))
+    
+    # Aumento de Brillo
+    brightness_copy = copy.copy(keyfacial_df)
+    brightness_copy['Image'] = brightness_copy['Image'].apply(
+        lambda x: np.clip(random.uniform(1.5, 2) * x, 0.0, 255.0)
+    )
+
+    # Volteo Vertical
+    vertical_flip_copy = copy.copy(keyfacial_df)
+    vertical_flip_copy['Image'] = vertical_flip_copy['Image'].apply(lambda x: np.flip(x, axis=0))
+    for i in range(len(columns)):
+        if i % 2 == 1:  # Coordenadas Y
+            vertical_flip_copy[columns[i]] = vertical_flip_copy[columns[i]].apply(lambda x: 96. - float(x))
+    
+    # Concatenar todas las transformaciones
+    augmented_df = np.concatenate((keyfacial_df, keyfacial_df_copy, brightness_copy, vertical_flip_copy))
+    return augmented_df
+
 @app.route('/')
 def index():
     images = os.listdir(UPLOAD_FOLDER)
@@ -102,4 +130,3 @@ def analyze():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
