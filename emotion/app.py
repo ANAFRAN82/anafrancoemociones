@@ -17,6 +17,7 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 def analyze_face(image_path):
     try:
+        # Inicializamos MediaPipe Face Mesh
         mp_face_mesh = mp.solutions.face_mesh
         face_mesh = mp_face_mesh.FaceMesh(
             static_image_mode=True,
@@ -28,6 +29,9 @@ def analyze_face(image_path):
         image = cv2.imread(image_path)
         if image is None:
             raise Exception("Could not load image")
+
+        # Dimensiones originales de la imagen
+        original_height, original_width = image.shape[:2]
 
         # Giramos la imagen horizontalmente
         flipped_image_h = cv2.flip(image, 1)  # Voltea horizontalmente
@@ -65,11 +69,16 @@ def analyze_face(image_path):
         fig = plt.figure(figsize=(8, 8))
         plt.imshow(gray_image, cmap='gray')
 
-        # Dibujamos los puntos clave
+        # Ajustamos las coordenadas de los puntos clave según los volteos
         for point_idx in key_points:
             landmark_point = landmark.landmark[point_idx]
-            x = int(landmark_point.x * width)
-            y = int(landmark_point.y * height)
+            x = int(landmark_point.x * original_width)
+            y = int(landmark_point.y * original_height)
+
+            # Ajustamos las coordenadas por el volteo horizontal y vertical
+            x = width - x  # Ajuste para el volteo horizontal
+            y = height - y  # Ajuste para el volteo vertical
+
             plt.plot(x, y, 'rx')
 
         buf = BytesIO()
