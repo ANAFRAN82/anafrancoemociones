@@ -136,30 +136,6 @@
                 transform: translateY(0);
             }
         }
-
-        /* New styles for mobile optimization */
-        @media (max-width: 768px) {
-            .md\:w-1\/2 {
-                width: 100%;
-            }
-
-            .title-container {
-                padding: 20px;
-            }
-
-            .btn-custom {
-                padding: 12px 20px;
-            }
-
-            .file-upload {
-                height: 120px;
-            }
-
-            .progress-container {
-                height: 16px;
-            }
-        }
-
     </style>
 </head>
 
@@ -255,11 +231,12 @@
                     success: function (response) {
                         $('#loading').addClass('hidden');
                         $('#results').removeClass('hidden');
-                        $('#resultImage').attr('src', response.image_url);
+                        $('#resultImage').attr('src', 'data:image/png;base64,' + response.image);
+                        $('#progress').css('width', '100%');
                     },
-                    error: function (error) {
+                    error: function (xhr) {
                         $('#loading').addClass('hidden');
-                        $('#error').removeClass('hidden').text('Hubo un error al procesar la imagen. Inténtalo de nuevo.');
+                        $('#error').removeClass('hidden').text(xhr.responseJSON?.error || 'Ocurrió un error');
                     }
                 });
             });
