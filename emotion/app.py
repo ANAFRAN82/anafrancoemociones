@@ -6,8 +6,6 @@ import base64
 from io import BytesIO
 import mediapipe as mp
 import os
-import copy
-import random
 
 app = Flask(__name__)
 
@@ -26,18 +24,31 @@ def analyze_face(image_path):
             min_detection_confidence=0.5
         )
 
+        # Cargamos la imagen
         image = cv2.imread(image_path)
         if image is None:
             raise Exception("Could not load image")
 
-        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        # Giramos la imagen horizontalmente
+        flipped_image_h = cv2.flip(image, 1)  # Voltea horizontalmente
 
+        # Aumentamos el brillo aleatoriamente
+        brightness_factor = np.random.uniform(1.5, 2.0)
+        brighter_image = np.clip(flipped_image_h * brightness_factor, 0, 255).astype(np.uint8)
+
+        # Volteamos verticalmente
+        flipped_image_v = cv2.flip(brighter_image, 0)  # Voltea verticalmente
+
+        # Convertimos la imagen para procesamiento facial
+        rgb_image = cv2.cvtColor(flipped_image_v, cv2.COLOR_BGR2RGB)
+        gray_image = cv2.cvtColor(flipped_image_v, cv2.COLOR_BGR2GRAY)
+
+        # Procesamos la imagen con MediaPipe
         results = face_mesh.process(rgb_image)
 
         if not results.multi_face_landmarks:
             raise Exception("No face detected in the image")
-        
+
         landmarks = results.multi_face_landmarks
         if len(landmarks) == 0:
             raise Exception("No landmarks found for detected face")
@@ -54,6 +65,7 @@ def analyze_face(image_path):
         fig = plt.figure(figsize=(8, 8))
         plt.imshow(gray_image, cmap='gray')
 
+        # Dibujamos los puntos clave
         for point_idx in key_points:
             landmark_point = landmark.landmark[point_idx]
             x = int(landmark_point.x * width)
@@ -73,32 +85,6 @@ def analyze_face(image_path):
         raise
     finally:
         plt.close('all')
-
-# Data Augmentation Functions
-def augment_data(keyfacial_df, columns):
-    # Volteo Horizontal
-    keyfacial_df_copy = copy.copy(keyfacial_df)
-    keyfacial_df_copy['Image'] = keyfacial_df['Image'].apply(lambda x: np.flip(x, axis=1))
-    for i in range(len(columns)):
-        if i % 2 == 0:  # Coordenadas X
-            keyfacial_df_copy[columns[i]] = keyfacial_df_copy[columns[i]].apply(lambda x: 96. - float(x))
-    
-    # Aumento de Brillo
-    brightness_copy = copy.copy(keyfacial_df)
-    brightness_copy['Image'] = brightness_copy['Image'].apply(
-        lambda x: np.clip(random.uniform(1.5, 2) * x, 0.0, 255.0)
-    )
-
-    # Volteo Vertical
-    vertical_flip_copy = copy.copy(keyfacial_df)
-    vertical_flip_copy['Image'] = vertical_flip_copy['Image'].apply(lambda x: np.flip(x, axis=0))
-    for i in range(len(columns)):
-        if i % 2 == 1:  # Coordenadas Y
-            vertical_flip_copy[columns[i]] = vertical_flip_copy[columns[i]].apply(lambda x: 96. - float(x))
-    
-    # Concatenar todas las transformaciones
-    augmented_df = np.concatenate((keyfacial_df, keyfacial_df_copy, brightness_copy, vertical_flip_copy))
-    return augmented_df
 
 @app.route('/')
 def index():
