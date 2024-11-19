@@ -104,7 +104,7 @@ def home():
     for filename in os.listdir(app.config['UPLOAD_FOLDER']):
         if allowed_file(filename):
             images.append(filename)
-    return render_template('index.html', images=images)
+    return render_template('indexx.html', images=images)
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
