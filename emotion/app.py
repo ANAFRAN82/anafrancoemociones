@@ -144,7 +144,7 @@ def analyze():
         print(f"Error in /analyze: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/static/uploads/<filename>')
+@app.route('/static/uploads/YO.jpeg')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
