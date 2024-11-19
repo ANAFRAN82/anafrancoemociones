@@ -10,10 +10,14 @@ import os
 app = Flask(__name__)
 
 UPLOAD_FOLDER = 'static/uploads'
+PROCESSED_FOLDER = 'static/processed'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+
+if not os.path.exists(PROCESSED_FOLDER):
+    os.makedirs(PROCESSED_FOLDER)
 
 def analyze_face(image_path):
     try:
@@ -33,63 +37,73 @@ def analyze_face(image_path):
         # Dimensiones originales de la imagen
         height, width = image.shape[:2]
 
-        # Procesamos la imagen original con MediaPipe
-        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        results = face_mesh.process(rgb_image)
+        # Aplicamos transformaciones
+        images_data = []
 
-        if not results.multi_face_landmarks:
-            raise Exception("No face detected in the image")
+        # Imagen volteada horizontalmente
+        flipped_horizontal = cv2.flip(image, 1)
+        images_data.append(save_image_with_points(flipped_horizontal, "flipped_horizontal.png", face_mesh, height, width))
 
-        landmarks = results.multi_face_landmarks[0].landmark
-
-        # Lista de puntos clave específicos (verificamos su validez)
-        num_landmarks = len(landmarks)
-        key_points = [i for i in [70, 55, 285, 300, 33, 480, 133, 362, 473, 263, 4, 185, 0, 306, 17] if i < num_landmarks]
-
-        # Coordenadas iniciales
-        points = [(int(landmarks[i].x * width), int(landmarks[i].y * height)) for i in key_points]
-
-        # Giramos horizontalmente
-        flipped_image_h = cv2.flip(image, 1)
-        points_flipped_h = [(width - x, y) for x, y in points]  # Ajustamos las coordenadas
-
-        # Aumentamos el brillo aleatoriamente
+        # Imagen con brillo aumentado
         brightness_factor = np.random.uniform(1.5, 2.0)
-        brighter_image = np.clip(flipped_image_h * brightness_factor, 0, 255).astype(np.uint8)
+        brighter_image = np.clip(image * brightness_factor, 0, 255).astype(np.uint8)
+        images_data.append(save_image_with_points(brighter_image, "brighter.png", face_mesh, height, width))
 
-        # Volteamos verticalmente
-        flipped_image_v = cv2.flip(brighter_image, 0)
-        points_flipped_v = [(x, height - y) for x, y in points_flipped_h]  # Ajustamos las coordenadas
+        # Imagen con brillo aumentado y volteada verticalmente
+        flipped_vertical = cv2.flip(brighter_image, 0)
+        images_data.append(save_image_with_points(flipped_vertical, "flipped_vertical.png", face_mesh, height, width))
 
-        # Convertimos a escala de grises para la visualización final
-        gray_image = cv2.cvtColor(flipped_image_v, cv2.COLOR_BGR2GRAY)
+        # Imagen original con puntos
+        images_data.append(save_image_with_points(image, "original.png", face_mesh, height, width))
 
-        # Dibujamos la imagen procesada y los puntos
-        plt.clf()
-        fig = plt.figure(figsize=(8, 8))
-        plt.imshow(gray_image, cmap='gray')
-
-        for x, y in points_flipped_v:
-            plt.plot(x, y, 'rx')
-
-        buf = BytesIO()
-        plt.savefig(buf, format='png', bbox_inches='tight')
-        buf.seek(0)
-        plt.close(fig)
-
-        image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-        return image_base64
+        return images_data
 
     except Exception as e:
         print(f"Error in analyze_face: {str(e)}")
         raise
-    finally:
-        plt.close('all')
+
+def save_image_with_points(image, filename, face_mesh, height, width):
+    """
+    Genera y guarda una imagen con los puntos clave detectados superpuestos.
+    """
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    # Procesamos la imagen con MediaPipe
+    results = face_mesh.process(rgb_image)
+    if not results.multi_face_landmarks:
+        raise Exception(f"No face detected in {filename}")
+
+    # Detectamos puntos clave específicos
+    landmarks = results.multi_face_landmarks[0].landmark
+    key_points = [i for i in [70, 55, 285, 300, 33, 480, 133, 362, 473, 263, 4, 185, 0, 306, 17] if i < len(landmarks)]
+    points = [(int(landmarks[i].x * width), int(landmarks[i].y * height)) for i in key_points]
+
+    # Dibujamos los puntos clave en la imagen
+    plt.clf()
+    fig = plt.figure(figsize=(8, 8))
+    plt.imshow(gray_image, cmap='gray')
+
+    for x, y in points:
+        plt.plot(x, y, 'rx')
+
+    buf = BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight')
+    buf.seek(0)
+
+    # Guardamos la imagen procesada en PROCESSED_FOLDER
+    output_path = os.path.join(PROCESSED_FOLDER, filename)
+    with open(output_path, "wb") as f:
+        f.write(buf.getvalue())
+
+    plt.close(fig)
+    return output_path
 
 @app.route('/')
 def index():
     images = os.listdir(UPLOAD_FOLDER)
-    return render_template('index.html', images=images)
+    processed_images = os.listdir(PROCESSED_FOLDER)
+    return render_template('index.html', images=images, processed_images=processed_images)
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
@@ -109,8 +123,8 @@ def analyze():
         image_path = os.path.join(app.config['UPLOAD_FOLDER'], existing_file)
 
     try:
-        image_base64 = analyze_face(image_path)
-        return jsonify({'image': image_base64})
+        images_data = analyze_face(image_path)
+        return jsonify({'processed_images': images_data})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
