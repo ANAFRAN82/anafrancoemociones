@@ -67,16 +67,20 @@ def analyze_face(image_path):
 
         for ax, (title, img) in zip(axes, transformations):
             ax.imshow(img, cmap='gray')
+            num_landmarks = len(results.multi_face_landmarks[0].landmark)
             for point_idx in key_points:
-                landmark = results.multi_face_landmarks[0].landmark[point_idx]
-                x = int(landmark.x * width)
-                y = int(landmark.y * height)
-                # Adjust keypoints for transformations
-                if title == "Horizontally Flipped":
-                    x = width - x
-                elif title == "Upside Down":
-                    y = height - y
-                ax.plot(x, y, 'rx')
+                if point_idx < num_landmarks:  # Verifica si el índice es válido
+                    landmark = results.multi_face_landmarks[0].landmark[point_idx]
+                    x = int(landmark.x * width)
+                    y = int(landmark.y * height)
+                    # Ajustar puntos clave según las transformaciones
+                    if title == "Horizontally Flipped":
+                        x = width - x
+                    elif title == "Upside Down":
+                        y = height - y
+                    ax.plot(x, y, 'rx')
+                else:
+                    print(f"Índice fuera de rango: {point_idx}")
             ax.set_title(title)
             ax.axis('off')
 
@@ -144,7 +148,7 @@ def analyze():
         print(f"Error in /analyze: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/static/uploads/YO.jpeg')
+@app.route('/static/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
