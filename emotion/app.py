@@ -50,7 +50,7 @@ def analyze_face(image_path):
             raise Exception("No face detected in the image")
 
         # Select 12 main keypoints
-        key_points = [33, 133, 362, 263, 1, 61, 291, 199, 94, 0, 24, 130]
+        key_points = [70, 55, 285, 300, 33, 480, 133, 362, 473, 263, 4, 185, 0, 306, 1]
         height, width = gray_image.shape
 
         # Prepare transformations
