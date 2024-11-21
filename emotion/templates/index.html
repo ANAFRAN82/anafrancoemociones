@@ -25,12 +25,11 @@
             transform: scale(1.1);
             box-shadow: 0px 8px 15px rgba(255, 255, 255, 0.2);
         }
-        .container {
-            animation: fadeIn 1.2s ease-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+
+        img {
+            max-width: 300px; /* Ajusta el tamaño máximo de las imágenes */
+            max-height: 300px;
+            margin: 0 auto; /* Centra las imágenes horizontalmente */
         }
     </style>
 </head>
@@ -65,7 +64,7 @@
 
         <section id="results" class="hidden">
             <h2 class="text-xl font-semibold mb-4 text-purple-300">Resultado</h2>
-            <img id="resultImage" class="w-full h-auto rounded-lg border-2 border-purple-300" src="" alt="Resultado del Análisis">
+            <img id="resultImage" class="rounded-lg border-2 border-purple-300" src="" alt="Resultado del Análisis">
         </section>
         <section id="error" class="hidden mt-4 bg-red-500 text-white p-3 rounded-lg">
             <p>No se pudo analizar la imagen.</p>
@@ -73,13 +72,13 @@
 
         {% if images %}
         <section class="mt-10">
-            <h2 class="text-xl font-semibold mb-3 text-blue-200">Imágenes anteriores</h2>
-            <div class="flex flex-col items-center space-y-4">
+            <h2 class="text-xl font-semibold mb-3 text-blue-200">Imágenes Anteriores</h2>
+            <div class="flex flex-col items-center space-y-6">
                 {% for image in images %}
                 <div class="relative group">
                     <img src="{{ url_for('static', filename='uploads/' + image) }}" 
                          alt="{{ image }}" 
-                         class="w-full h-auto rounded-lg border-2 border-purple-300 transform hover:scale-105 transition"
+                         class="rounded-lg border-2 border-purple-300 transform hover:scale-105 transition"
                          onclick="analyzeExisting('{{ image }}')">
                 </div>
                 {% endfor %}
