@@ -9,7 +9,7 @@ import numpy as np
 import base64
 from io import BytesIO
 from werkzeug.utils import secure_filename
-from deepface import DeepFace  # Import DeepFace for emotion detection
+from fer import FER  # Librería para detección de emociones
 
 app = Flask(__name__)
 
@@ -50,20 +50,32 @@ def analyze_face(image_path):
         if not results.multi_face_landmarks:
             raise Exception("No face detected in the image")
 
-        # Detect emotions using DeepFace
-        emotion_analysis = DeepFace.analyze(image_path, actions=['emotion'])
+        # Detect the emotion using FER
+        emotion_detector = FER()
+        emotion, score = emotion_detector.top_emotion(image)
 
-        # Get the dominant emotion
-        dominant_emotion = emotion_analysis[0]['dominant_emotion']
-        emotion_label = { 
-            'angry': 'Ira',
-            'disgust': 'Odio',
-            'sad': 'Tristeza',
-            'happy': 'Felicidad',
-            'surprise': 'Sorpresa'
+        # Emotion dictionary
+        emotion_dict = {
+            0: 'Ira', 1: 'Odio', 2: 'Tristeza', 3: 'Felicidad', 4: 'Sorpresa'
         }
 
-        detected_emotion = emotion_label.get(dominant_emotion, "Desconocida")
+        # Map detected emotion to corresponding label
+        if emotion == 'angry':
+            emotion_label = emotion_dict[0]
+        elif emotion == 'disgust':
+            emotion_label = emotion_dict[1]
+        elif emotion == 'sad':
+            emotion_label = emotion_dict[2]
+        elif emotion == 'happy':
+            emotion_label = emotion_dict[3]
+        elif emotion == 'surprise':
+            emotion_label = emotion_dict[4]
+        else:
+            emotion_label = 'Desconocida'
+
+        # Select 12 main keypoints
+        key_points = [70, 55, 285, 300, 33, 480, 133, 362, 473, 263, 4, 185, 0, 306, 1]
+        height, width = gray_image.shape
 
         # Prepare transformations
         transformations = [
@@ -73,30 +85,30 @@ def analyze_face(image_path):
             ("Upside Down", cv2.flip(gray_image, 0))
         ]
 
-        height, width = gray_image.shape
-
-        # Initialize figure for displaying images
+        # Initialize figure
         fig, axes = plt.subplots(2, 2, figsize=(12, 12))
         axes = axes.flatten()
 
         for ax, (title, img) in zip(axes, transformations):
             ax.imshow(img, cmap='gray')
             num_landmarks = len(results.multi_face_landmarks[0].landmark)
-            for point_idx in range(0, 468):  # Iterate through the number of facial landmarks
-                if point_idx < num_landmarks:  # Check if the index is valid
+            for point_idx in key_points:
+                if point_idx < num_landmarks:  # Verifica si el índice es válido
                     landmark = results.multi_face_landmarks[0].landmark[point_idx]
                     x = int(landmark.x * width)
                     y = int(landmark.y * height)
-                    # Adjust key points according to transformations
+                    # Ajustar puntos clave según las transformaciones
                     if title == "Horizontally Flipped":
                         x = width - x
                     elif title == "Upside Down":
                         y = height - y
                     ax.plot(x, y, 'rx')
-            ax.set_title(f"{title} - Emoción: {detected_emotion}")
+                else:
+                    print(f"Índice fuera de rango: {point_idx}")
+            ax.set_title(f"{title} - {emotion_label}")
             ax.axis('off')
 
-        # Save processed image to memory
+        # Save plot to memory
         buf = BytesIO()
         plt.tight_layout()
         plt.savefig(buf, format='png', bbox_inches='tight')
@@ -105,7 +117,7 @@ def analyze_face(image_path):
 
         # Convert to base64
         image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-        return image_base64, detected_emotion
+        return image_base64
 
     except Exception as e:
         print(f"Error in analyze_face: {str(e)}")
@@ -149,12 +161,11 @@ def analyze():
             return jsonify({'error': 'No file provided'}), 400
 
         # Analyze the image
-        result_image, detected_emotion = analyze_face(filepath)
+        result_image = analyze_face(filepath)
         
         return jsonify({
             'success': True,
-            'image': result_image,
-            'emotion': detected_emotion
+            'image': result_image
         })
 
     except Exception as e:
