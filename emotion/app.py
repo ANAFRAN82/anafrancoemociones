@@ -9,7 +9,6 @@ import numpy as np
 import base64
 from io import BytesIO
 from werkzeug.utils import secure_filename
-from fer import FER  # Librería para detección de emociones
 
 app = Flask(__name__)
 
@@ -50,29 +49,6 @@ def analyze_face(image_path):
         if not results.multi_face_landmarks:
             raise Exception("No face detected in the image")
 
-        # Detect the emotion using FER
-        emotion_detector = FER()
-        emotion, score = emotion_detector.top_emotion(image)
-
-        # Emotion dictionary
-        emotion_dict = {
-            0: 'Ira', 1: 'Odio', 2: 'Tristeza', 3: 'Felicidad', 4: 'Sorpresa'
-        }
-
-        # Map detected emotion to corresponding label
-        if emotion == 'angry':
-            emotion_label = emotion_dict[0]
-        elif emotion == 'disgust':
-            emotion_label = emotion_dict[1]
-        elif emotion == 'sad':
-            emotion_label = emotion_dict[2]
-        elif emotion == 'happy':
-            emotion_label = emotion_dict[3]
-        elif emotion == 'surprise':
-            emotion_label = emotion_dict[4]
-        else:
-            emotion_label = 'Desconocida'
-
         # Select 12 main keypoints
         key_points = [70, 55, 285, 300, 33, 480, 133, 362, 473, 263, 4, 185, 0, 306, 1]
         height, width = gray_image.shape
@@ -105,7 +81,7 @@ def analyze_face(image_path):
                     ax.plot(x, y, 'rx')
                 else:
                     print(f"Índice fuera de rango: {point_idx}")
-            ax.set_title(f"{title} - {emotion_label}")
+            ax.set_title(title)
             ax.axis('off')
 
         # Save plot to memory
