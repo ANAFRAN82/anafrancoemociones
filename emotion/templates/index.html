@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Puntos Faciales Ana Franco</title>
+    <title>Detección de Emociones y Puntos Faciales</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
@@ -37,8 +37,9 @@
 <body class="flex items-center justify-center min-h-screen">
 
     <div class="container max-w-lg w-full p-8 bg-gray-900 rounded-3xl shadow-xl text-center">
-        <h1 class="text-4xl font-bold mb-6 text-blue-400">Detección de Puntos Faciales</h1>
+        <h1 class="text-4xl font-bold mb-6 text-blue-400">Detección de Puntos Faciales y Emociones</h1>
 
+        <!-- Subir Imagen para Detección de Puntos Faciales -->
         <section class="mb-8">
             <h2 class="text-lg font-semibold text-teal-300 mb-4">Sube una Imagen</h2>
             <form id="uploadForm" class="flex flex-col items-center">
@@ -56,21 +57,27 @@
                 <button type="submit" class="animated-button mt-8 bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2 rounded-full shadow-lg text-white font-semibold hover:from-purple-500 hover:to-blue-500 transition-transform duration-300">Analizar</button>
             </form>
         </section>
-        <section id="loading" class="hidden text-center my-4">
-    <div class="w-full bg-gray-200 rounded-full h-2.5">
-        <div class="bg-blue-500 h-2.5 rounded-full animate-pulse" style="width: 75%;"></div>
-    </div>
-    <p class="text-gray-500 mt-2">Cargando...</p>
-</section>
 
+        <!-- Cargando -->
+        <section id="loading" class="hidden text-center my-4">
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div class="bg-blue-500 h-2.5 rounded-full animate-pulse" style="width: 75%;"></div>
+            </div>
+            <p class="text-gray-500 mt-2">Cargando...</p>
+        </section>
+
+        <!-- Resultados -->
         <section id="results" class="hidden">
             <h2 class="text-xl font-semibold mb-4 text-purple-300">Resultado</h2>
             <img id="resultImage" class="w-full h-auto rounded-lg border-2 border-purple-300" src="" alt="Resultado del Análisis">
         </section>
+
+        <!-- Error -->
         <section id="error" class="hidden mt-4 bg-red-500 text-white p-3 rounded-lg">
             <p>No se pudo analizar la imagen.</p>
         </section>
 
+        <!-- Imágenes Anteriores -->
         {% if images %}
         <section class="mt-10">
             <h2 class="text-xl font-semibold mb-3 text-blue-200">Imagenes anteriores</h2>
@@ -83,6 +90,21 @@
             </div>
         </section>
         {% endif %}
+
+        <!-- Formulario de Emociones -->
+        <section id="emotion-form" class="mt-8">
+            <h3 class="text-lg font-semibold text-teal-300 mb-4">Sube una imagen para detectar emociones</h3>
+            <form id="upload-form" enctype="multipart/form-data">
+                <input type="file" name="file" id="file">
+                <button type="button" onclick="uploadImage()">Analizar</button>
+            </form>
+            <div id="result">
+                <h3>Resultado:</h3>
+                <img id="result-image" style="max-width: 100%; display: none;">
+                <h4>Emoción detectada: <span id="emotion-text"></span></h4>
+            </div>
+        </section>
+
     </div>
 
     <script>
@@ -123,6 +145,7 @@
                 });
             });
         });
+
         function analyzeExisting(filename) {
             showLoading();
             const formData = new FormData();
@@ -143,6 +166,25 @@
                     $('#error').removeClass('hidden').text(xhr.responseJSON?.error || 'Ocurrió un error');
                 }
             });
+        }
+
+        function uploadImage() {
+            const formData = new FormData(document.getElementById('upload-form'));
+            fetch('/analyze', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('result-image').src = 'data:image/png;base64,' + data.image;
+                    document.getElementById('result-image').style.display = 'block';
+                    document.getElementById('emotion-text').innerText = data.emotion;
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => console.error('Error:', error));
         }
     </script>
 </body>
