@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,14 +8,16 @@
 <body>
     <h1>Sube una imagen para detectar emociones</h1>
     <form id="upload-form" enctype="multipart/form-data">
-        <input type="file" name="file" id="file">
+        <input type="file" name="file" id="file" required>
         <button type="button" onclick="uploadImage()">Analizar</button>
     </form>
-    <div id="result">
+
+    <div id="result" style="display: none;">
         <h3>Resultado:</h3>
-        <img id="result-image" style="max-width: 100%; display: none;">
+        <img id="result-image" style="max-width: 100%;">
         <h4>Emoción detectada: <span id="emotion-text"></span></h4>
     </div>
+
     <script>
         function uploadImage() {
             const formData = new FormData(document.getElementById('upload-form'));
@@ -26,9 +28,13 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    // Mostrar la imagen procesada
                     document.getElementById('result-image').src = 'data:image/png;base64,' + data.image;
                     document.getElementById('result-image').style.display = 'block';
+
+                    // Mostrar la emoción detectada
                     document.getElementById('emotion-text').innerText = data.emotion;
+                    document.getElementById('result').style.display = 'block';
                 } else {
                     alert(data.error);
                 }
