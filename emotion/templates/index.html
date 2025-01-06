@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Puntos Faciales Ana Franco</title>
+    <title>Puntos Faciales y Emociones</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
@@ -25,18 +25,19 @@
             transform: scale(1.1);
             box-shadow: 0px 8px 15px rgba(255, 255, 255, 0.2);
         }
-
-        img {
-            max-width: 300px; /* Ajusta el tamaño máximo de las imágenes */
-            max-height: 300px;
-            margin: 20px auto; /* Espaciado entre las imágenes y centrado */
+        .container {
+            animation: fadeIn 1.2s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen">
 
     <div class="container max-w-lg w-full p-8 bg-gray-900 rounded-3xl shadow-xl text-center">
-        <h1 class="text-4xl font-bold mb-6 text-blue-400">Detección de Puntos Faciales</h1>
+        <h1 class="text-4xl font-bold mb-6 text-blue-400">Detección de Emociones y Puntos Faciales</h1>
 
         <section class="mb-8">
             <h2 class="text-lg font-semibold text-teal-300 mb-4">Sube una Imagen</h2>
@@ -64,7 +65,8 @@
 
         <section id="results" class="hidden">
             <h2 class="text-xl font-semibold mb-4 text-purple-300">Resultado</h2>
-            <img id="resultImage" class="rounded-lg border-2 border-purple-300" src="" alt="Resultado del Análisis" style="max-width: 600px; max-height: 600px;">
+            <img id="resultImage" class="w-full h-auto rounded-lg border-2 border-purple-300" src="" alt="Resultado del Análisis">
+            <p id="emotionResult" class="mt-4 text-lg font-bold text-green-400"></p>
         </section>
         <section id="error" class="hidden mt-4 bg-red-500 text-white p-3 rounded-lg">
             <p>No se pudo analizar la imagen.</p>
@@ -73,13 +75,10 @@
         {% if images %}
         <section class="mt-10">
             <h2 class="text-xl font-semibold mb-3 text-blue-200">Imágenes Anteriores</h2>
-            <div class="flex flex-col items-center space-y-6">
+            <div class="grid grid-cols-3 gap-4">
                 {% for image in images %}
                 <div class="relative group">
-                    <img src="{{ url_for('static', filename='uploads/' + image) }}" 
-                         alt="{{ image }}" 
-                         class="rounded-lg border-2 border-purple-300 transform hover:scale-105 transition"
-                         onclick="analyzeExisting('{{ image }}')">
+                    <img src="{{ url_for('static', filename='uploads/' + image) }}" alt="{{ image }}" class="w-full h-24 object-cover rounded-lg transform hover:scale-105 transition" onclick="analyzeExisting('{{ image }}')">
                 </div>
                 {% endfor %}
             </div>
@@ -117,6 +116,7 @@
                         hideLoading();
                         $('#results').removeClass('hidden');
                         $('#resultImage').attr('src', 'data:image/png;base64,' + response.image);
+                        $('#emotionResult').text('Emoción Detectada: ' + response.emotion);
                     },
                     error: function(xhr) {
                         hideLoading();
@@ -140,6 +140,7 @@
                     hideLoading();
                     $('#results').removeClass('hidden');
                     $('#resultImage').attr('src', 'data:image/png;base64,' + response.image);
+                    $('#emotionResult').text('Emoción Detectada: ' + response.emotion);
                 },
                 error: function(xhr) {
                     hideLoading();
