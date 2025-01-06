@@ -6,27 +6,32 @@ import matplotlib
 matplotlib.use('Agg')  # Set backend before importing pyplot
 import matplotlib.pyplot as plt
 import numpy as np
-import base64
+import tensorflow as tf
 from io import BytesIO
+import base64
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-# Configure upload folder
+# Configuración del directorio de carga
 UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB máximo
 
-# Ensure upload directory exists
+# Crear directorio si no existe
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Cargar el modelo de detección de emociones
+emotion_model = tf.keras.models.load_model('path_to_your_model.h5')  # Reemplaza con la ruta de tu modelo
+label_to_text = {0: 'Ira', 1: 'Odio', 2: 'Tristeza', 3: 'Felicidad', 4: 'Sorpresa'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def analyze_face(image_path):
     try:
-        # Initialize MediaPipe Face Mesh
+        # Inicializar MediaPipe Face Mesh
         mp_face_mesh = mp.solutions.face_mesh
         face_mesh = mp_face_mesh.FaceMesh(
             static_image_mode=True,
@@ -34,118 +39,89 @@ def analyze_face(image_path):
             min_detection_confidence=0.5
         )
 
-        # Read image
+        # Leer la imagen
         image = cv2.imread(image_path)
         if image is None:
-            raise Exception("Could not load image")
+            raise Exception("No se pudo cargar la imagen")
 
-        # Convert to RGB for MediaPipe
+        # Convertir a RGB y escala de grises
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        # Detect facial landmarks
+        # Detectar puntos faciales
         results = face_mesh.process(rgb_image)
-
         if not results.multi_face_landmarks:
-            raise Exception("No face detected in the image")
+            raise Exception("No se detectó ninguna cara en la imagen")
 
-        # Select 12 main keypoints
-        key_points = [70, 55, 285, 300, 33, 480, 133, 362, 473, 263, 4, 185, 0, 306, 1]
-        height, width = gray_image.shape
+        # Recortar la cara para análisis de emociones
+        height, width = rgb_image.shape[:2]
+        key_landmark = results.multi_face_landmarks[0].landmark[4]  # Usa un punto clave como referencia
+        x_min = int(max(key_landmark.x * width - 50, 0))
+        y_min = int(max(key_landmark.y * height - 50, 0))
+        x_max = int(min(key_landmark.x * width + 50, width))
+        y_max = int(min(key_landmark.y * height + 50, height))
+        roi = rgb_image[y_min:y_max, x_min:x_max]
 
-        # Prepare transformations
-        transformations = [
-            ("Original", gray_image),
-            ("Horizontally Flipped", cv2.flip(gray_image, 1)),
-            ("Brightened", cv2.convertScaleAbs(gray_image, alpha=1.2, beta=50)),
-            ("Upside Down", cv2.flip(gray_image, 0))
-        ]
+        # Preprocesar la ROI para el modelo
+        roi_resized = cv2.resize(roi, (48, 48))  # Tamaño esperado por el modelo
+        roi_gray = cv2.cvtColor(roi_resized, cv2.COLOR_RGB2GRAY)
+        roi_normalized = roi_gray / 255.0  # Normalización
+        roi_reshaped = np.expand_dims(roi_normalized, axis=(0, -1))  # Expande dimensiones para el modelo
 
-        # Initialize figure
-        fig, axes = plt.subplots(2, 2, figsize=(12, 12))
-        axes = axes.flatten()
+        # Predecir emoción
+        emotion_prediction = emotion_model.predict(roi_reshaped)
+        emotion_label = np.argmax(emotion_prediction)
+        emotion_text = label_to_text[emotion_label]
 
-        for ax, (title, img) in zip(axes, transformations):
-            ax.imshow(img, cmap='gray')
-            num_landmarks = len(results.multi_face_landmarks[0].landmark)
-            for point_idx in key_points:
-                if point_idx < num_landmarks:  # Verifica si el índice es válido
-                    landmark = results.multi_face_landmarks[0].landmark[point_idx]
-                    x = int(landmark.x * width)
-                    y = int(landmark.y * height)
-                    # Ajustar puntos clave según las transformaciones
-                    if title == "Horizontally Flipped":
-                        x = width - x
-                    elif title == "Upside Down":
-                        y = height - y
-                    ax.plot(x, y, 'rx')
-                else:
-                    print(f"Índice fuera de rango: {point_idx}")
-            ax.set_title(title)
-            ax.axis('off')
+        # Dibujar la emoción detectada
+        plt.imshow(gray_image, cmap='gray')
+        plt.title(f'Emoción: {emotion_text}')
+        plt.axis('off')
 
-        # Save plot to memory
+        # Guardar imagen procesada
         buf = BytesIO()
-        plt.tight_layout()
         plt.savefig(buf, format='png', bbox_inches='tight')
         buf.seek(0)
-        plt.close(fig)
-
-        # Convert to base64
         image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-        return image_base64
+        return image_base64, emotion_text
 
     except Exception as e:
-        print(f"Error in analyze_face: {str(e)}")
+        print(f"Error en analyze_face: {str(e)}")
         raise
     finally:
         plt.close('all')
 
 @app.route('/')
 def home():
-    # Get list of images in upload folder
-    images = []
-    for filename in os.listdir(app.config['UPLOAD_FOLDER']):
-        if allowed_file(filename):
-            images.append(filename)
+    images = [f for f in os.listdir(app.config['UPLOAD_FOLDER']) if allowed_file(f)]
     return render_template('index.html', images=images)
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
     try:
-        # Check if we're analyzing an existing file
-        if 'existing_file' in request.form:
-            filename = request.form['existing_file']
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            if not os.path.exists(filepath):
-                return jsonify({'error': f'File not found: {filename}'}), 404
-            
-        # Check if we're uploading a new file
-        elif 'file' in request.files:
+        if 'file' in request.files:
             file = request.files['file']
             if file.filename == '':
-                return jsonify({'error': 'No file selected'}), 400
-            
+                return jsonify({'error': 'No se seleccionó ningún archivo'}), 400
+
             if not allowed_file(file.filename):
-                return jsonify({'error': 'File type not allowed'}), 400
-            
+                return jsonify({'error': 'Tipo de archivo no permitido'}), 400
+
             filename = secure_filename(file.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
-        
-        else:
-            return jsonify({'error': 'No file provided'}), 400
 
-        # Analyze the image
-        result_image = analyze_face(filepath)
-        
-        return jsonify({
-            'success': True,
-            'image': result_image
-        })
+            result_image, emotion = analyze_face(filepath)
+
+            return jsonify({
+                'success': True,
+                'image': result_image,
+                'emotion': emotion
+            })
+
+        return jsonify({'error': 'No se proporcionó ningún archivo'}), 400
 
     except Exception as e:
-        print(f"Error in /analyze: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/static/uploads/<filename>')
