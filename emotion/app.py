@@ -9,6 +9,7 @@ import numpy as np
 import base64
 from io import BytesIO
 from werkzeug.utils import secure_filename
+from fer import FER  # Import the FER library
 
 app = Flask(__name__)
 
@@ -84,6 +85,13 @@ def analyze_face(image_path):
             ax.set_title(title)
             ax.axis('off')
 
+        # Emotion detection with FER
+        emotion_detector = FER()
+        emotion, score = emotion_detector.top_emotion(image)  # Get the dominant emotion
+
+        # Annotate image with detected emotion
+        ax.annotate(f"Emotion: {emotion}", xy=(0.5, 0.05), xycoords="axes fraction", ha='center', fontsize=15, color='white')
+
         # Save plot to memory
         buf = BytesIO()
         plt.tight_layout()
@@ -93,7 +101,7 @@ def analyze_face(image_path):
 
         # Convert to base64
         image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-        return image_base64
+        return image_base64, emotion
 
     except Exception as e:
         print(f"Error in analyze_face: {str(e)}")
@@ -137,11 +145,12 @@ def analyze():
             return jsonify({'error': 'No file provided'}), 400
 
         # Analyze the image
-        result_image = analyze_face(filepath)
+        result_image, emotion = analyze_face(filepath)
         
         return jsonify({
             'success': True,
-            'image': result_image
+            'image': result_image,
+            'emotion': emotion  # Send detected emotion
         })
 
     except Exception as e:
