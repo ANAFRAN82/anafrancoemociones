@@ -67,7 +67,7 @@
         <section id="results" class="hidden">
             <h2 class="text-xl font-semibold mb-4 text-purple-300">Resultado</h2>
             <p id="emotion" class="text-lg font-semibold text-teal-300 mb-4"></p>
-            <img id="resultImage" class="w-full h-auto rounded-lg border-2 border-purple-300" src="" alt="Resultado del Análisis">
+            <img id="resultImage" class="w-96 h-auto rounded-lg border-2 border-purple-300" src="" alt="Resultado del Análisis">
         </section>
 
         <section id="error" class="hidden mt-4 bg-red-500 text-white p-3 rounded-lg">
@@ -80,7 +80,7 @@
             <div class="grid grid-cols-3 gap-4">
                 {% for image in images %}
                 <div class="relative group">
-                    <img src="{{ url_for('static', filename='uploads/' + image) }}" alt="Imagen previa" class="w-full h-36 object-cover rounded-lg transform hover:scale-105 transition" onclick="analyzeExisting('{{ image }}')">
+                    <img src="{{ url_for('static', filename='uploads/' + image) }}" alt="Imagen previa" class="w-full h-48 object-cover rounded-lg transform hover:scale-105 transition" onclick="analyzeExisting('{{ image }}')">
                 </div>
                 {% endfor %}
             </div>
