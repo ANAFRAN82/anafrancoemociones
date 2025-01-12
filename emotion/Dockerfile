@@ -14,25 +14,24 @@ RUN apt-get update && apt-get install -y \
     gstreamer1.0-plugins-good \
     && rm -rf /var/lib/apt/lists/*
 
-# Copiar el archivo requirements.txt
+# Copiar requirements.txt
 COPY requirements.txt .
 
-# Actualizar pip a la última versión y luego instalar dependencias de Python
-RUN pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+# Instalar dependencias de Python
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar el resto del código de la aplicación
+# Copiar el resto del código
 COPY . .
 
-# Crear directorio para archivos subidos
+# Crear directorio para uploads
 RUN mkdir -p static/uploads
 
 # Variables de entorno
 ENV PORT=10000
 ENV PYTHONUNBUFFERED=1
 
-# Exponer el puerto de la aplicación
+# Exponer el puerto
 EXPOSE ${PORT}
 
-# Comando para ejecutar la aplicación con Gunicorn
+# Comando para ejecutar la aplicación
 CMD gunicorn --bind 0.0.0.0:$PORT app:app
