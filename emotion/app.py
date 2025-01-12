@@ -9,54 +9,51 @@ import numpy as np
 import base64
 from io import BytesIO
 from werkzeug.utils import secure_filename
-from deepface import DeepFace
 
-# Configuración de la aplicación Flask
 app = Flask(__name__)
 
-# Configurar la carpeta de subida
+# Configure upload folder
 UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Máximo tamaño de archivo 16MB
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
-# Asegúrate de que la carpeta de subidas exista
+# Ensure upload directory exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Función para comprobar si el archivo tiene una extensión permitida
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Inicializar MediaPipe FaceMesh
-mp_face_mesh = mp.solutions.face_mesh
-face_mesh = mp_face_mesh.FaceMesh(
-    static_image_mode=True,
-    max_num_faces=1,
-    min_detection_confidence=0.5
-)
-
 def analyze_face(image_path):
     try:
-        # Leer la imagen
+        # Initialize MediaPipe Face Mesh
+        mp_face_mesh = mp.solutions.face_mesh
+        face_mesh = mp_face_mesh.FaceMesh(
+            static_image_mode=True,
+            max_num_faces=1,
+            min_detection_confidence=0.5
+        )
+
+        # Read image
         image = cv2.imread(image_path)
         if image is None:
-            raise Exception("No se pudo cargar la imagen")
+            raise Exception("Could not load image")
 
-        # Convertir la imagen a RGB
+        # Convert to RGB for MediaPipe
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        # Detectar puntos faciales
+        # Detect facial landmarks
         results = face_mesh.process(rgb_image)
 
         if not results.multi_face_landmarks:
-            raise Exception("No se detectó ninguna cara en la imagen")
+            raise Exception("No face detected in the image")
 
-        # Seleccionar los puntos clave (12 puntos principales de la cara)
+        # Select 12 main keypoints
         key_points = [70, 55, 285, 300, 33, 480, 133, 362, 473, 263, 4, 185, 0, 306, 1]
         height, width = gray_image.shape
 
-        # Preparar transformaciones
+        # Prepare transformations
         transformations = [
             ("Original", gray_image),
             ("Horizontally Flipped", cv2.flip(gray_image, 1)),
@@ -64,7 +61,7 @@ def analyze_face(image_path):
             ("Upside Down", cv2.flip(gray_image, 0))
         ]
 
-        # Inicializar la figura para mostrar
+        # Initialize figure
         fig, axes = plt.subplots(2, 2, figsize=(12, 12))
         axes = axes.flatten()
 
@@ -72,7 +69,7 @@ def analyze_face(image_path):
             ax.imshow(img, cmap='gray')
             num_landmarks = len(results.multi_face_landmarks[0].landmark)
             for point_idx in key_points:
-                if point_idx < num_landmarks:
+                if point_idx < num_landmarks:  # Verifica si el índice es válido
                     landmark = results.multi_face_landmarks[0].landmark[point_idx]
                     x = int(landmark.x * width)
                     y = int(landmark.y * height)
@@ -82,41 +79,31 @@ def analyze_face(image_path):
                     elif title == "Upside Down":
                         y = height - y
                     ax.plot(x, y, 'rx')
+                else:
+                    print(f"Índice fuera de rango: {point_idx}")
             ax.set_title(title)
             ax.axis('off')
 
-        # Guardar la imagen generada en memoria
+        # Save plot to memory
         buf = BytesIO()
         plt.tight_layout()
         plt.savefig(buf, format='png', bbox_inches='tight')
         buf.seek(0)
         plt.close(fig)
 
-        # Convertir a base64 para mostrar en la web
+        # Convert to base64
         image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-
-        # Análisis de emociones con DeepFace
-        emotion = analyze_emotion(image_path)  # Usando DeepFace para analizar la emoción
-
-        return image_base64, emotion
+        return image_base64
 
     except Exception as e:
-        print(f"Error en analyze_face: {str(e)}")
+        print(f"Error in analyze_face: {str(e)}")
         raise
     finally:
         plt.close('all')
 
-def analyze_emotion(image_path):
-    # Usar DeepFace para analizar la emoción
-    try:
-        analysis = DeepFace.analyze(image_path, actions=['emotion'], enforce_detection=False)
-        return analysis[0]['dominant_emotion']
-    except Exception as e:
-        print(f"Error en DeepFace: {str(e)}")
-        return "Emotion detection failed"
-
 @app.route('/')
 def home():
+    # Get list of images in upload folder
     images = []
     for filename in os.listdir(app.config['UPLOAD_FOLDER']):
         if allowed_file(filename):
@@ -126,40 +113,39 @@ def home():
 @app.route('/analyze', methods=['POST'])
 def analyze():
     try:
-        # Revisar si estamos analizando un archivo existente
+        # Check if we're analyzing an existing file
         if 'existing_file' in request.form:
             filename = request.form['existing_file']
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             if not os.path.exists(filepath):
-                return jsonify({'error': f'Archivo no encontrado: {filename}'}), 404
-
-        # Revisar si estamos subiendo un archivo nuevo
+                return jsonify({'error': f'File not found: {filename}'}), 404
+            
+        # Check if we're uploading a new file
         elif 'file' in request.files:
             file = request.files['file']
             if file.filename == '':
-                return jsonify({'error': 'No se seleccionó un archivo'}), 400
-
+                return jsonify({'error': 'No file selected'}), 400
+            
             if not allowed_file(file.filename):
-                return jsonify({'error': 'Tipo de archivo no permitido'}), 400
-
+                return jsonify({'error': 'File type not allowed'}), 400
+            
             filename = secure_filename(file.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
-
+        
         else:
-            return jsonify({'error': 'No se proporcionó archivo'}), 400
+            return jsonify({'error': 'No file provided'}), 400
 
-        # Analizar la imagen
-        result_image, emotion = analyze_face(filepath)
-
+        # Analyze the image
+        result_image = analyze_face(filepath)
+        
         return jsonify({
             'success': True,
-            'image': result_image,
-            'emotion': emotion
+            'image': result_image
         })
 
     except Exception as e:
-        print(f"Error en /analyze: {str(e)}")
+        print(f"Error in /analyze: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/static/uploads/<filename>')
